@@ -34,6 +34,11 @@ namespace XNodeEditor {
         private Vector2 lastMousePosition;
         private float dragThreshold = 1f;
 
+        private Vector2 GetNodePosition(XNode.Node node)
+        {
+            return graphEditor.target.GetNodePosition(node);
+        }
+
         public void Controls() {
             wantsMouseMove = true;
             Event e = Event.current;
@@ -82,15 +87,17 @@ namespace XNodeEditor {
                                 if (Selection.objects[i] is XNode.Node) {
                                     XNode.Node node = Selection.objects[i] as XNode.Node;
                                     Undo.RecordObject(node, "Moved Node");
-                                    Vector2 initial = node.position;
-                                    node.position = mousePos + dragOffset[i];
+                                    Vector2 initial = GetNodePosition(node);
+                                    var newPosition = mousePos + dragOffset[i]; ;
+                                    
                                     if (gridSnap) {
-                                        node.position.x = (Mathf.Round((node.position.x + 8) / 16) * 16) - 8;
-                                        node.position.y = (Mathf.Round((node.position.y + 8) / 16) * 16) - 8;
+                                        newPosition.x = (Mathf.Round((newPosition.x + 8) / 16) * 16) - 8;
+                                        newPosition.y = (Mathf.Round((newPosition.y + 8) / 16) * 16) - 8;
                                     }
+                                    graphEditor.target.SetNodePosition(node, newPosition);
 
                                     // Offset portConnectionPoints instantly if a node is dragged so they aren't delayed by a frame.
-                                    Vector2 offset = node.position - initial;
+                                    Vector2 offset = newPosition - initial;
                                     if (offset.sqrMagnitude > 0) {
                                         foreach (XNode.NodePort output in node.Outputs) {
                                             Rect rect;
@@ -253,7 +260,7 @@ namespace XNodeEditor {
                             // Double click to center node
                             if (isDoubleClick) {
                                 Vector2 nodeDimension = nodeSizes.ContainsKey(hoveredNode) ? nodeSizes[hoveredNode] / 2 : Vector2.zero;
-                                panOffset = -hoveredNode.position - nodeDimension;
+                                panOffset = -GetNodePosition(hoveredNode) - nodeDimension;
                             }
                         }
 
@@ -352,7 +359,7 @@ namespace XNodeEditor {
             for (int i = 0; i < Selection.objects.Length; i++) {
                 if (Selection.objects[i] is XNode.Node) {
                     XNode.Node node = Selection.objects[i] as XNode.Node;
-                    dragOffset[i] = node.position - WindowToGridPosition(current.mousePosition);
+                    dragOffset[i] = GetNodePosition(node) - WindowToGridPosition(current.mousePosition);
                 }
             }
 
@@ -366,8 +373,8 @@ namespace XNodeEditor {
         public void Home() {
             var nodes = Selection.objects.Where(o => o is XNode.Node).Cast<XNode.Node>().ToList();
             if (nodes.Count > 0) {
-                Vector2 minPos = nodes.Select(x => x.position).Aggregate((x, y) => new Vector2(Mathf.Min(x.x, y.x), Mathf.Min(x.y, y.y)));
-                Vector2 maxPos = nodes.Select(x => x.position + (nodeSizes.ContainsKey(x) ? nodeSizes[x] : Vector2.zero)).Aggregate((x, y) => new Vector2(Mathf.Max(x.x, y.x), Mathf.Max(x.y, y.y)));
+                Vector2 minPos = nodes.Select(x => GetNodePosition(x)).Aggregate((x, y) => new Vector2(Mathf.Min(x.x, y.x), Mathf.Min(x.y, y.y)));
+                Vector2 maxPos = nodes.Select(x => GetNodePosition(x) + (nodeSizes.ContainsKey(x) ? nodeSizes[x] : Vector2.zero)).Aggregate((x, y) => new Vector2(Mathf.Max(x.x, y.x), Mathf.Max(x.y, y.y)));
                 panOffset = -(minPos + (maxPos - minPos) / 2f);
             } else {
                 zoom = 2;
@@ -419,7 +426,7 @@ namespace XNodeEditor {
             XNode.Node[] selectedNodes = Selection.objects.Select(x => x as XNode.Node).Where(x => x != null && x.graph == graph).ToArray();
             if (selectedNodes == null || selectedNodes.Length == 0) return;
             // Get top left node position
-            Vector2 topLeftNode = selectedNodes.Select(x => x.position).Aggregate((x, y) => new Vector2(Mathf.Min(x.x, y.x), Mathf.Min(x.y, y.y)));
+            Vector2 topLeftNode = selectedNodes.Select(x => GetNodePosition(x)).Aggregate((x, y) => new Vector2(Mathf.Min(x.x, y.x), Mathf.Min(x.y, y.y)));
             InsertDuplicateNodes(selectedNodes, topLeftNode + new Vector2(30, 30));
         }
 
@@ -435,7 +442,7 @@ namespace XNodeEditor {
             if (nodes == null || nodes.Length == 0) return;
 
             // Get top-left node
-            Vector2 topLeftNode = nodes.Select(x => x.position).Aggregate((x, y) => new Vector2(Mathf.Min(x.x, y.x), Mathf.Min(x.y, y.y)));
+            Vector2 topLeftNode = nodes.Select(x => GetNodePosition(x)).Aggregate((x, y) => new Vector2(Mathf.Min(x.x, y.x), Mathf.Min(x.y, y.y)));
             Vector2 offset = topLeft - topLeftNode;
 
             UnityEngine.Object[] newNodes = new UnityEngine.Object[nodes.Length];
@@ -454,7 +461,7 @@ namespace XNodeEditor {
 
                 XNode.Node newNode = graphEditor.CopyNode(srcNode);
                 substitutes.Add(srcNode, newNode);
-                newNode.position = srcNode.position + offset;
+                graphEditor.target.SetNodePosition(newNode, GetNodePosition(srcNode) + offset);
                 newNodes[i] = newNode;
             }
 
@@ -522,7 +529,7 @@ namespace XNodeEditor {
         bool IsHoveringTitle(XNode.Node node) {
             Vector2 mousePos = Event.current.mousePosition;
             //Get node position
-            Vector2 nodePos = GridToWindowPosition(node.position);
+            Vector2 nodePos = GridToWindowPosition(GetNodePosition(node));
             float width;
             Vector2 size;
             if (nodeSizes.TryGetValue(node, out size)) width = size.x;

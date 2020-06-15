@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace XNode {
     /// <summary> Base class for all node graphs </summary>
@@ -10,6 +13,53 @@ namespace XNode {
         /// <summary> All nodes in the graph. <para/>
         /// See: <see cref="AddNode{T}"/> </summary>
         [SerializeField] public List<Node> nodes = new List<Node>();
+
+        [Serializable]
+        public struct NodeToVarPos
+        {
+            [SerializeField]
+            public Node node;
+            [SerializeField]
+            public Vector2 position;
+        }
+        // Use list instead of dictionnary as unity doesn't display and serialize dictionnaries
+        [SerializeField] public List<NodeToVarPos> nodePositions = new List<NodeToVarPos>();
+
+        public Vector2 GetNodePosition(Node node)
+        {
+            for (int i = 0; i < nodePositions.Count; ++i)
+            {
+                var val = nodePositions[i];
+                if (val.node == node)
+                {
+                    return val.position;
+                }
+            }
+
+            return Vector2.zero;
+        }
+
+        public void SetNodePosition(Node node, Vector2 position)
+        {
+            int foundIndex = -1;
+            for(int i = 0; i < nodePositions.Count; ++i)
+            {
+                if (node == nodePositions[i].node)
+                {
+                    foundIndex = i;
+                    break;
+                }
+            }
+
+            if (foundIndex != -1)
+            {
+                nodePositions[foundIndex] = new NodeToVarPos() { node = node, position = position };
+            }
+            else
+            {
+                nodePositions.Add(new NodeToVarPos() { node = node, position = position });
+            }
+        }
 
         /// <summary> Add a node to the graph by type (convenience method - will call the System.Type version) </summary>
         public T AddNode<T>() where T : Node {
@@ -40,7 +90,30 @@ namespace XNode {
         public virtual void RemoveNode(Node node) {
             node.ClearConnections();
             nodes.Remove(node);
+            nodePositions.RemoveAll(x => x.node == node);
             if (Application.isPlaying) Destroy(node);
+        }
+
+        /// <summary> Safely remove a node and all its connections </summary>
+        /// <param name="node"> The node to remove </param>
+        public virtual void RemoveRefNode(Node node)
+        {
+            // Remove only the connections to nodes in the current graph
+            foreach (NodePort port in node.Ports)
+            {
+                // this is a list copy so ok to delete while iterating
+                var portConnections = port.GetConnections();
+                foreach (var connectedPort in portConnections)
+                {
+                    if (nodes.Contains(connectedPort.node))
+                    {
+                        port.Disconnect(connectedPort);
+                    }
+                }
+            }
+
+            nodes.Remove(node);
+            nodePositions.RemoveAll(x => x.node == node);
         }
 
         /// <summary> Remove all nodes and connections from the graph </summary>
@@ -51,6 +124,7 @@ namespace XNode {
                 }
             }
             nodes.Clear();
+            nodePositions.Clear();
         }
 
         /// <summary> Create a new deep copy of this graph </summary>
