@@ -41,6 +41,11 @@ namespace XNodeEditor {
             GUI.matrix = m;
         }
 
+        protected virtual void Update()
+        {
+            graphEditor.Update();
+        }
+
         public static void BeginZoomed(Rect rect, float zoom, float topPadding) {
             GUI.EndClip();
 
