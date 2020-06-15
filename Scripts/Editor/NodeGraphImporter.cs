@@ -35,7 +35,7 @@ namespace XNodeEditor {
         private static void AddRequired(NodeGraph graph, Type type, ref Vector2 position) {
             if (!graph.nodes.Any(x => x.GetType() == type)) {
                 XNode.Node node = graph.AddNode(type);
-                node.position = position;
+                graph.SetNodePosition(node, position);
                 position.x += 200;
                 if (node.name == null || node.name.Trim() == "") node.name = NodeEditorUtilities.NodeDefaultName(type);
                 if (!string.IsNullOrEmpty(AssetDatabase.GetAssetPath(graph))) AssetDatabase.AddObjectToAsset(node, graph);

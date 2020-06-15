@@ -444,7 +444,7 @@ namespace XNodeEditor {
                 EditorGUIUtility.labelWidth = 84;
 
                 //Get node position
-                Vector2 nodePos = GridToWindowPositionNoClipped(node.position);
+                Vector2 nodePos = GridToWindowPositionNoClipped(GetNodePosition(node));
 
                 GUILayout.BeginArea(new Rect(nodePos, new Vector2(nodeEditor.GetWidth(), 4000)));
 
@@ -489,7 +489,7 @@ namespace XNodeEditor {
 
                     foreach (var kvp in NodeEditor.portPositions) {
                         Vector2 portHandlePos = kvp.Value;
-                        portHandlePos += node.position;
+                        portHandlePos += graphEditor.target.GetNodePosition(node);
                         Rect rect = new Rect(portHandlePos.x - 8, portHandlePos.y - 8, 16, 16);
                         portConnectionPoints[kvp.Key] = rect;
                     }
@@ -539,7 +539,7 @@ namespace XNodeEditor {
 
         private bool ShouldBeCulled(XNode.Node node) {
 
-            Vector2 nodePos = GridToWindowPositionNoClipped(node.position);
+            Vector2 nodePos = GridToWindowPositionNoClipped(graphEditor.target.GetNodePosition(node));
             if (nodePos.x / _zoom > position.width) return true; // Right
             else if (nodePos.y / _zoom > position.height) return true; // Bottom
             else if (nodeSizes.ContainsKey(node)) {

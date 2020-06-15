@@ -168,12 +168,30 @@ namespace XNodeEditor {
             Undo.RecordObject(target, "Create Node");
             XNode.Node node = target.AddNode(type);
             Undo.RegisterCreatedObjectUndo(node, "Create Node");
-            node.position = position;
+            target.SetNodePosition(node, position);
             if (node.name == null || node.name.Trim() == "") node.name = NodeEditorUtilities.NodeDefaultName(type);
             if (!string.IsNullOrEmpty(AssetDatabase.GetAssetPath(target))) AssetDatabase.AddObjectToAsset(node, target);
             if (NodeEditorPreferences.GetSettings().autoSave) AssetDatabase.SaveAssets();
             NodeEditorWindow.RepaintAll();
             return node;
+        }
+
+        public virtual void AddExistingNode(XNode.Node node, Vector2 position)
+        {
+            Undo.RecordObject(target, "Add existing Node");
+            Undo.RegisterCreatedObjectUndo(node, "Add existing Node");
+            if (!target.nodes.Any(x => node.GetInstanceID() == x.GetInstanceID()))
+            {
+                target.nodes.Add(node);
+                target.SetNodePosition(node, position);
+            }
+
+            if (NodeEditorPreferences.GetSettings().autoSave)
+            {
+                AssetDatabase.SaveAssets();
+            }
+
+            NodeEditorWindow.RepaintAll();
         }
 
         /// <summary> Creates a copy of the original node in the graph </summary>
@@ -211,8 +229,18 @@ namespace XNodeEditor {
             foreach (var port in node.Ports)
                 foreach (var conn in port.GetConnections())
                     Undo.RecordObject(conn.node, "Delete Node");
-            target.RemoveNode(node);
-            Undo.DestroyObjectImmediate(node);
+
+            bool isRef = NodeEditorWindow.current.graphEditor.target != node.graph;
+            if (!isRef)
+            {
+                target.RemoveNode(node);
+                Undo.DestroyObjectImmediate(node);
+            }
+            else
+            {
+                target.RemoveRefNode(node);
+            }
+
             if (NodeEditorPreferences.GetSettings().autoSave) AssetDatabase.SaveAssets();
         }
 
