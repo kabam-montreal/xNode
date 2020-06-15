@@ -15,6 +15,8 @@ namespace XNodeEditor {
 
         public virtual void OnGUI() { }
 
+        public virtual void Update() { }
+
         /// <summary> Called when opened by NodeEditorWindow </summary>
         public virtual void OnOpen() { }
         
