@@ -43,7 +43,7 @@ namespace XNodeEditor {
 
         protected virtual void Update()
         {
-            graphEditor.Update();
+            graphEditor?.Update();
         }
 
         public static void BeginZoomed(Rect rect, float zoom, float topPadding) {
