@@ -66,6 +66,16 @@ namespace XNode {
             return AddNode(typeof(T)) as T;
         }
 
+        /// <summary> Add an existing node to the graph </summary>
+        public void AddExistingNode(Node node)
+        {
+            if (!nodes.Contains(node))
+            {
+                Node.graphHotfix = this;
+                nodes.Add(node);
+            }
+        }
+
         /// <summary> Add a node to the graph by type </summary>
         public virtual Node AddNode(Type type) {
             Node.graphHotfix = this;
@@ -94,7 +104,7 @@ namespace XNode {
             if (Application.isPlaying) Destroy(node);
         }
 
-        /// <summary> Safely remove a node and all its connections </summary>
+        /// <summary> Safely remove a node and all its connections to nodes in the current graph </summary>
         /// <param name="node"> The node to remove </param>
         public virtual void RemoveRefNode(Node node)
         {
@@ -105,7 +115,8 @@ namespace XNode {
                 var portConnections = port.GetConnections();
                 foreach (var connectedPort in portConnections)
                 {
-                    if (nodes.Contains(connectedPort.node))
+                    // Don't break ref node to ref node connections
+                    if (nodes.Contains(connectedPort.node) && !IsRefNode(connectedPort.node))
                     {
                         port.Disconnect(connectedPort);
                     }
@@ -114,6 +125,86 @@ namespace XNode {
 
             nodes.Remove(node);
             nodePositions.RemoveAll(x => x.node == node);
+        }
+
+        public bool IsRefNode(Node node)
+        {
+            return this != node.graph;
+        }
+
+        /// <summary> Purge all ref nodes who are not connected </summary>
+        public void PurgeOrphanRefNodes()
+        {
+            bool hasRemovedNode = false;
+            foreach (var node in nodes.ToList())
+            {
+                bool isRef = IsRefNode(node);
+                if (isRef)
+                {
+                    bool isConnected = false;
+                    foreach (XNode.NodePort inputPort in node.Inputs)
+                    {
+                        var connections = inputPort.GetConnections();
+                        foreach (var connection in connections)
+                        {
+                            if (connection.node != null && nodes.Contains(connection.node))
+                            {
+                                isConnected = true;
+                                break;
+                            }
+                        }
+
+                        if (isConnected)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (!isConnected)
+                    {
+                        RemoveRefNode(node);
+                        hasRemovedNode = true;
+                    }
+                }
+            }
+
+            // Purging nodes might have created new orphans, rerun until no nodes are removed
+            if (hasRemovedNode)
+            {
+                PurgeOrphanRefNodes();
+            }
+        }
+
+        /// <summary> Ref node might have changed outside this graph, update nodes to reflect the reality </summary>
+        public void UpdateRefNodes()
+        {
+            bool nodeAdded = false;
+            foreach (var node in nodes.ToList())
+            {
+                bool isRef = IsRefNode(node);
+                if (isRef)
+                {
+                    foreach (XNode.NodePort outputPort in node.Outputs)
+                    {
+                        var connections = outputPort.GetConnections();
+                        foreach (var connection in connections)
+                        {
+                            if (!nodes.Contains(connection.node))
+                            {
+                                AddExistingNode(connection.node);
+                                nodeAdded = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (nodeAdded)
+            {
+                UpdateRefNodes();
+            }
+
+            PurgeOrphanRefNodes();
         }
 
         /// <summary> Remove all nodes and connections from the graph </summary>
