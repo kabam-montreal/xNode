@@ -180,15 +180,11 @@ namespace XNodeEditor {
         }
 
         /// <summary> Add an existing(ref) node to the current graph with its dependencies </summary>
-        public void AddExistingNode(XNode.Node node, Vector2 position, bool saveUndo = true)
+        public void AddExistingNode(XNode.Node node, Vector2 position)
         {
             if(!target.nodes.Contains(node))
             {
-                if (saveUndo)
-                {
-                    Undo.RecordObject(target, "Add existing Node");
-                }
-                
+                Undo.RecordObject(target, "Add existing Node");               
 
                 AddExistingNodeInternal(node, position);
 
@@ -213,14 +209,20 @@ namespace XNodeEditor {
                 int i = 0;
                 foreach (var port in node.Outputs)
                 {
-                    if (port.Connection?.node != null)
+                    var connectionCount = port.ConnectionCount;
+                    if (connectionCount > 0)
                     {
-                        NodeEditor editor = NodeEditor.GetEditor(port.Connection.node, NodeEditorWindow.current);
-                        float xPosition = position.x + editor.GetWidth() + 100.0f;
-                        // There's currently no way to recover the height, just use an hardcoded value
-                        float yPosition = position.y + (i * 400.0f);
-                        AddExistingNodeInternal(port.Connection.node, new Vector2(xPosition, yPosition));
-                        ++i;
+                        for(int j = 0; j < connectionCount; ++j)
+                        {
+                            var connectedNode = port.GetConnection(j).node ;
+                            NodeEditor editor = NodeEditor.GetEditor(node, NodeEditorWindow.current);
+                            float xPosition = position.x + editor.GetWidth() + 100.0f;
+                            // There's currently no way to recover the height, just use an hardcoded value
+                            float yPosition = position.y + (i * 400.0f);
+                            AddExistingNodeInternal(connectedNode, new Vector2(xPosition, yPosition));
+                            ++i;
+                        }
+
                     }
                 }
             }
