@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Graphs;
 using UnityEngine;
 
 namespace XNodeEditor {
@@ -178,22 +179,53 @@ namespace XNodeEditor {
             return node;
         }
 
-        public virtual void AddExistingNode(XNode.Node node, Vector2 position)
+        /// <summary> Add an existing(ref) node to the current graph with its dependencies </summary>
+        public void AddExistingNode(XNode.Node node, Vector2 position)
         {
-            Undo.RecordObject(target, "Add existing Node");
-            Undo.RegisterCreatedObjectUndo(node, "Add existing Node");
-            if (!target.nodes.Any(x => node.GetInstanceID() == x.GetInstanceID()))
+            if(!target.nodes.Contains(node))
             {
-                target.nodes.Add(node);
+                Undo.RecordObject(target, "Add existing Node");               
+
+                AddExistingNodeInternal(node, position);
+
+                if (NodeEditorPreferences.GetSettings().autoSave)
+                {
+                    AssetDatabase.SaveAssets();
+                }
+
+                NodeEditorWindow.RepaintAll();
+            }
+        }
+
+        /// <summary> Create a node and save it in the graph asset </summary>
+        private void AddExistingNodeInternal(XNode.Node node, Vector2 position)
+        {
+            bool notExisting = !target.nodes.Contains(node);
+            if (notExisting)
+            {
+                target.AddExistingNode(node);
                 target.SetNodePosition(node, position);
-            }
 
-            if (NodeEditorPreferences.GetSettings().autoSave)
-            {
-                AssetDatabase.SaveAssets();
-            }
+                int i = 0;
+                foreach (var port in node.Outputs)
+                {
+                    var connectionCount = port.ConnectionCount;
+                    if (connectionCount > 0)
+                    {
+                        for(int j = 0; j < connectionCount; ++j)
+                        {
+                            var connectedNode = port.GetConnection(j).node ;
+                            NodeEditor editor = NodeEditor.GetEditor(node, NodeEditorWindow.current);
+                            float xPosition = position.x + editor.GetWidth() + 100.0f;
+                            // There's currently no way to recover the height, just use an hardcoded value
+                            float yPosition = position.y + (i * 400.0f);
+                            AddExistingNodeInternal(connectedNode, new Vector2(xPosition, yPosition));
+                            ++i;
+                        }
 
-            NodeEditorWindow.RepaintAll();
+                    }
+                }
+            }
         }
 
         /// <summary> Creates a copy of the original node in the graph </summary>
@@ -232,7 +264,7 @@ namespace XNodeEditor {
                 foreach (var conn in port.GetConnections())
                     Undo.RecordObject(conn.node, "Delete Node");
 
-            bool isRef = NodeEditorWindow.current.graphEditor.target != node.graph;
+            bool isRef = target.IsRefNode(node);
             if (!isRef)
             {
                 target.RemoveNode(node);
@@ -244,6 +276,12 @@ namespace XNodeEditor {
             }
 
             if (NodeEditorPreferences.GetSettings().autoSave) AssetDatabase.SaveAssets();
+        }
+
+        public virtual void PurgeOrphanRefNodes()
+        {
+            Undo.RecordObject(target, "Purge Node");
+            target.PurgeOrphanRefNodes();
         }
 
         [AttributeUsage(AttributeTargets.Class)]
