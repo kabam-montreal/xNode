@@ -278,6 +278,48 @@ namespace XNodeEditor {
             if (NodeEditorPreferences.GetSettings().autoSave) AssetDatabase.SaveAssets();
         }
 
+        /// <summary> Ref node might have changed outside this graph, update nodes to reflect the reality </summary>
+        public void UpdateRefNodes()
+        {
+            bool nodeAdded = false;
+
+            foreach (var node in target.nodes.ToList())
+            {
+                foreach (XNode.NodePort outputPort in node.Outputs)
+                {
+                    var connections = outputPort.GetConnections();
+                    foreach (var connection in connections)
+                    {
+                        if (!target.nodes.Contains(connection.node))
+                        {
+                            AddNodeNextToNode(node, connection.node);
+                            nodeAdded = true;
+                        }
+                    }
+                }
+            }
+
+            if (nodeAdded)
+            {
+                UpdateRefNodes();
+            }
+
+            PurgeOrphanRefNodes();
+        }
+
+        public void AddNodeNextToNode(XNode.Node leftNode, XNode.Node rightNode, float space = 100.0f)
+        {
+            Vector2 finalPos = Vector2.zero;
+            if (leftNode != null)
+            {
+                NodeEditor editor = NodeEditor.GetEditor(leftNode, NodeEditorWindow.current);
+                var leftNodePos = leftNode.graph.GetNodePosition(leftNode);
+                finalPos = new Vector2(leftNodePos.x + editor.GetWidth() + space, leftNodePos.y);
+            }
+
+            AddExistingNode(rightNode, finalPos);
+        }
+
         public virtual void PurgeOrphanRefNodes()
         {
             Undo.RecordObject(target, "Purge Node");

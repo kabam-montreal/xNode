@@ -175,38 +175,6 @@ namespace XNode {
             }
         }
 
-        /// <summary> Ref node might have changed outside this graph, update nodes to reflect the reality </summary>
-        public void UpdateRefNodes()
-        {
-            bool nodeAdded = false;
-            foreach (var node in nodes.ToList())
-            {
-                bool isRef = IsRefNode(node);
-                if (isRef)
-                {
-                    foreach (XNode.NodePort outputPort in node.Outputs)
-                    {
-                        var connections = outputPort.GetConnections();
-                        foreach (var connection in connections)
-                        {
-                            if (!nodes.Contains(connection.node))
-                            {
-                                AddExistingNode(connection.node);
-                                nodeAdded = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (nodeAdded)
-            {
-                UpdateRefNodes();
-            }
-
-            PurgeOrphanRefNodes();
-        }
-
         /// <summary> Remove all nodes and connections from the graph </summary>
         public virtual void Clear() {
             if (Application.isPlaying) {
