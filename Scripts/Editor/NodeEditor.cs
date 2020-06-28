@@ -83,7 +83,7 @@ namespace XNodeEditor {
             Type type = target.GetType();
             int width;
             if (type.TryGetAttributeWidth(out width)) return width;
-            else return 208;
+            else return 250;
         }
 
         /// <summary> Returns color for target node </summary>
