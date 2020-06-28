@@ -230,6 +230,29 @@ namespace XNode {
             return result;
         }
 
+        public bool ConnectionsEqual(NodePort otherPort)
+        {
+            bool equal = true;
+            if (otherPort.ConnectionCount != ConnectionCount)
+            {
+                equal = false;
+            }
+            else
+            {
+                var connections = GetConnections();
+                foreach (var connection in connections)
+                {                    
+                    if (!otherPort.IsConnectedTo(connection))
+                    {
+                        equal = false;
+                        break;
+                    }
+                }
+            }
+
+            return equal;
+        }
+
         public NodePort GetConnection(int i) {
             //If the connection is broken for some reason, remove it.
             if (connections[i].node == null || string.IsNullOrEmpty(connections[i].fieldName)) {
