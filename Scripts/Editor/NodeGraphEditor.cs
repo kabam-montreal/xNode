@@ -184,50 +184,6 @@ namespace XNodeEditor {
             return node;
         }
 
-        /// <summary> Add an existing(ref) node to the current graph with its dependencies </summary>
-        public void AddExistingNode(XNode.Node node, Vector2 position)
-        {
-            if(!target.nodes.Contains(node))
-            {
-                Undo.RecordObject(target, "Add existing Node");               
-
-                AddExistingNodeInternal(node, position);
-
-                if (NodeEditorPreferences.GetSettings().autoSave)
-                {
-                    AssetDatabase.SaveAssets();
-                }
-
-                NodeEditorWindow.RepaintAll();
-            }
-        }
-
-        /// <summary> Create a node and save it in the graph asset </summary>
-        private void AddExistingNodeInternal(XNode.Node node, Vector2 position)
-        {
-            bool notExisting = !target.nodes.Contains(node);
-            if (notExisting)
-            {
-                target.AddExistingNode(node);
-                target.SetNodePosition(node, position);
-
-                int i = 0;
-                foreach (var port in node.Outputs)
-                {
-                    foreach(var connection in port.GetConnections())
-                    {
-                        var connectedNode = connection.node ;
-                        NodeEditor editor = NodeEditor.GetEditor(node, NodeEditorWindow.current);
-                        float xPosition = position.x + editor.GetWidth() + 100.0f;
-                        // There's currently no way to recover the height, just use an hardcoded value
-                        float yPosition = position.y + (i * 400.0f);
-                        AddExistingNodeInternal(connectedNode, new Vector2(xPosition, yPosition));
-                        ++i;
-                    }
-                }
-            }
-        }
-
         /// <summary> Creates a copy of the original node in the graph </summary>
         public virtual XNode.Node CopyNode(XNode.Node original) {
             Undo.RecordObject(target, "Duplicate Node");
