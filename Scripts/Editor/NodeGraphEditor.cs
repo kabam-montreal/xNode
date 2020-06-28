@@ -214,20 +214,15 @@ namespace XNodeEditor {
                 int i = 0;
                 foreach (var port in node.Outputs)
                 {
-                    var connectionCount = port.ConnectionCount;
-                    if (connectionCount > 0)
+                    foreach(var connection in port.GetConnections())
                     {
-                        for(int j = 0; j < connectionCount; ++j)
-                        {
-                            var connectedNode = port.GetConnection(j).node ;
-                            NodeEditor editor = NodeEditor.GetEditor(node, NodeEditorWindow.current);
-                            float xPosition = position.x + editor.GetWidth() + 100.0f;
-                            // There's currently no way to recover the height, just use an hardcoded value
-                            float yPosition = position.y + (i * 400.0f);
-                            AddExistingNodeInternal(connectedNode, new Vector2(xPosition, yPosition));
-                            ++i;
-                        }
-
+                        var connectedNode = connection.node ;
+                        NodeEditor editor = NodeEditor.GetEditor(node, NodeEditorWindow.current);
+                        float xPosition = position.x + editor.GetWidth() + 100.0f;
+                        // There's currently no way to recover the height, just use an hardcoded value
+                        float yPosition = position.y + (i * 400.0f);
+                        AddExistingNodeInternal(connectedNode, new Vector2(xPosition, yPosition));
+                        ++i;
                     }
                 }
             }
