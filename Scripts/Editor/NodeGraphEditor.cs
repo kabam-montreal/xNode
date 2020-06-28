@@ -20,12 +20,17 @@ namespace XNodeEditor {
 
         /// <summary> Called when opened by NodeEditorWindow </summary>
         public virtual void OnOpen() { }
-        
+
+        /// <summary> Called when editorwindow changes graph or is disabled </summary>
+        public virtual void OnClose() { }
+
         /// <summary> Called when NodeEditorWindow gains focus </summary>
         public virtual void OnWindowFocus() { }
 
         /// <summary> Called when NodeEditorWindow loses focus </summary>
         public virtual void OnWindowFocusLost() { }
+
+        public virtual void AddPortContextMenu(GenericMenu menu, XNode.NodePort port) { }
 
         public virtual Texture2D GetGridTexture() {
             return NodeEditorPreferences.GetSettings().gridTexture;
@@ -61,8 +66,8 @@ namespace XNodeEditor {
         }
 
         /// <summary> Add items for the context menu when right-clicking this node. Override to add custom menu items. </summary>
-        public virtual void AddContextMenuItems(GenericMenu menu) {
-            Vector2 pos = NodeEditorWindow.current.WindowToGridPosition(Event.current.mousePosition);
+        public virtual void AddContextMenuItems(GenericMenu menu, Vector2 positionOnGrid) {
+            Vector2 pos = positionOnGrid;
             var nodeTypes = NodeEditorReflection.nodeTypes.OrderBy(type => GetNodeMenuOrder(type)).ToArray();
             for (int i = 0; i < nodeTypes.Length; i++) {
                 Type type = nodeTypes[i];
@@ -264,66 +269,10 @@ namespace XNodeEditor {
                 foreach (var conn in port.GetConnections())
                     Undo.RecordObject(conn.node, "Delete Node");
 
-            bool isRef = target.IsRefNode(node);
-            if (!isRef)
-            {
-                target.RemoveNode(node);
-                Undo.DestroyObjectImmediate(node);
-            }
-            else
-            {
-                target.RemoveRefNode(node);
-            }
+            target.RemoveNode(node);
+            Undo.DestroyObjectImmediate(node);
 
             if (NodeEditorPreferences.GetSettings().autoSave) AssetDatabase.SaveAssets();
-        }
-
-        /// <summary> Ref node might have changed outside this graph, update nodes to reflect the reality </summary>
-        public void UpdateRefNodes()
-        {
-            bool nodeAdded = false;
-
-            foreach (var node in target.nodes.ToList())
-            {
-                foreach (XNode.NodePort outputPort in node.Outputs)
-                {
-                    var connections = outputPort.GetConnections();
-                    foreach (var connection in connections)
-                    {
-                        if (!target.nodes.Contains(connection.node))
-                        {
-                            AddNodeNextToNode(node, connection.node);
-                            nodeAdded = true;
-                        }
-                    }
-                }
-            }
-
-            if (nodeAdded)
-            {
-                UpdateRefNodes();
-            }
-
-            PurgeOrphanRefNodes();
-        }
-
-        public void AddNodeNextToNode(XNode.Node leftNode, XNode.Node rightNode, float space = 100.0f)
-        {
-            Vector2 finalPos = Vector2.zero;
-            if (leftNode != null)
-            {
-                NodeEditor editor = NodeEditor.GetEditor(leftNode, NodeEditorWindow.current);
-                var leftNodePos = leftNode.graph.GetNodePosition(leftNode);
-                finalPos = new Vector2(leftNodePos.x + editor.GetWidth() + space, leftNodePos.y);
-            }
-
-            AddExistingNode(rightNode, finalPos);
-        }
-
-        public virtual void PurgeOrphanRefNodes()
-        {
-            Undo.RecordObject(target, "Purge Node");
-            target.PurgeOrphanRefNodes();
         }
 
         [AttributeUsage(AttributeTargets.Class)]

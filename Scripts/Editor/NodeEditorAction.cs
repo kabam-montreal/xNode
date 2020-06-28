@@ -86,7 +86,7 @@ namespace XNodeEditor {
                             for (int i = 0; i < Selection.objects.Length; i++) {
                                 if (Selection.objects[i] is XNode.Node) {
                                     XNode.Node node = Selection.objects[i] as XNode.Node;
-                                    Undo.RecordObject(node, "Moved Node");
+                                    Undo.RecordObject(graphEditor.target, "Moved Node");
                                     Vector2 initial = GetNodePosition(node);
                                     var newPosition = mousePos + dragOffset[i]; ;
                                     
@@ -231,7 +231,8 @@ namespace XNodeEditor {
                             // Open context menu for auto-connection if there is no target node
                             else if (draggedOutputTarget == null && NodeEditorPreferences.GetSettings().dragToCreate && autoConnectOutput != null) {
                                 GenericMenu menu = new GenericMenu();
-                                graphEditor.AddContextMenuItems(menu);
+                                var mousePosition = NodeEditorWindow.current.WindowToGridPosition(Event.current.mousePosition);
+                                graphEditor.AddContextMenuItems(menu, mousePosition);
                                 menu.DropDown(new Rect(Event.current.mousePosition, Vector2.zero));
                             }
                             //Release dragged connection
@@ -293,7 +294,8 @@ namespace XNodeEditor {
                             } else if (!IsHoveringNode) {
                                 autoConnectOutput = null;
                                 GenericMenu menu = new GenericMenu();
-                                graphEditor.AddContextMenuItems(menu);
+                                var positionOnGrid = WindowToGridPosition(Event.current.mousePosition);
+                                graphEditor.AddContextMenuItems(menu, positionOnGrid);
                                 menu.DropDown(new Rect(Event.current.mousePosition, Vector2.zero));
                             }
                         }

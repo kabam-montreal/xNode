@@ -52,6 +52,9 @@ namespace XNodeEditor {
                 _rects[index] = portConnectionPoint.Value;
                 index++;
             }
+
+            graphEditor?.OnClose();
+            graphEditor = null;
         }
 
         private void OnEnable() {
@@ -89,6 +92,10 @@ namespace XNodeEditor {
             if (graphEditor != null) graphEditor.OnWindowFocusLost();
         }
 
+        void AddPortContextMenu(GenericMenu menu, XNode.NodePort port) {
+            if (graphEditor != null) graphEditor.AddPortContextMenu(menu, port);
+        }
+
         [InitializeOnLoadMethod]
         private static void OnLoad() {
             Selection.selectionChanged -= OnSelectionChanged;
@@ -107,7 +114,10 @@ namespace XNodeEditor {
         private void ValidateGraphEditor() {
             NodeGraphEditor graphEditor = NodeGraphEditor.GetEditor(graph, this);
             if (this.graphEditor != graphEditor && graphEditor != null) {
+                var oldgraphEditor = this.graphEditor;
                 this.graphEditor = graphEditor;
+
+                oldgraphEditor?.OnClose();
                 graphEditor.OnOpen();
             }
         }
