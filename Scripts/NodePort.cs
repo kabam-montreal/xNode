@@ -226,11 +226,22 @@ namespace XNode {
             port.node.OnCreateConnection(this, port);
         }
 
-        public List<NodePort> GetConnections() {
+
+        public List<NodePort> GetConnections()
+        {
             List<NodePort> result = new List<NodePort>();
-            for (int i = 0; i < connections.Count; i++) {
+            for (int i = 0; i < connections.Count; i++)
+            {
                 NodePort port = GetConnection(i);
-                if (port != null) result.Add(port);
+                if (port != null)
+                {
+                    result.Add(port);
+                }
+                else
+                {
+                    --i;
+                }
+
             }
             return result;
         }

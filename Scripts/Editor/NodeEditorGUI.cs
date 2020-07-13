@@ -346,7 +346,12 @@ namespace XNodeEditor {
                         NoodleStroke noodleStroke = graphEditor.GetNoodleStroke(output, input);
 
                         // Error handling
-                        if (input == null) continue; //If a script has been updated and the port doesn't exist, it is removed and null is returned. If this happens, return.
+                        if (input == null)
+                        {
+                            --k;
+                            continue; //If a script has been updated and the port doesn't exist, it is removed and null is returned. If this happens, return.
+                        }
+                            
                         if (!input.IsConnectedTo(output)) input.Connect(output);
                         Rect toRect;
                         if (!_portConnectionPoints.TryGetValue(input, out toRect)) continue;
