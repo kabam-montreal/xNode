@@ -217,6 +217,11 @@ namespace XNode {
             connections.Add(new PortConnection(port));
             if (port.connections == null) port.connections = new List<PortConnection>();
             if (!port.IsConnectedTo(this)) port.connections.Add(new PortConnection(this));
+
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(node);
+            UnityEditor.EditorUtility.SetDirty(port.node);
+#endif
             node.OnCreateConnection(this, port);
             port.node.OnCreateConnection(this, port);
         }
