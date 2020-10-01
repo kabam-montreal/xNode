@@ -36,7 +36,7 @@ namespace XNodeEditor {
 
         private Vector2 GetNodePosition(XNode.Node node)
         {
-            return graphEditor.target.GetNodePosition(node);
+            return graphEditor?.target?.GetNodePosition(node) ?? Vector2.zero;
         }
 
         public void Controls() {
