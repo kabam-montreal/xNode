@@ -135,6 +135,13 @@ namespace XNode {
         /// <summary> Purge all ref nodes who are not connected </summary>
         public void PurgeOrphanRefNodes()
         {
+            nodes.RemoveAll(x => x == null);
+            nodePositions.RemoveAll(x => x.node == null);
+            PurgeOrphanRefNodesInternal();
+        }
+
+        private void PurgeOrphanRefNodesInternal()
+        {
             bool hasRemovedNode = false;
             foreach (var node in nodes.ToList())
             {
