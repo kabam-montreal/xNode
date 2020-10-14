@@ -324,20 +324,15 @@ namespace XNode {
 
         /// <summary> Disconnect this port from another port </summary>
         public void Disconnect(NodePort port) {
+
             // Remove this ports connection to the other
-            for (int i = connections.Count - 1; i >= 0; i--) {
-                if (connections[i].Port == port) {
-                    connections.RemoveAt(i);
-                }
-            }
+            connections.RemoveAll(x => x.Port == port);
+
             if (port != null) {
                 // Remove the other ports connection to this port
-                for (int i = 0; i < port.connections.Count; i++) {
-                    if (port.connections[i].Port == this) {
-                        port.connections.RemoveAt(i);
-                    }
-                }
+                port.connections.RemoveAll(x => x.Port == this);               
             }
+
             // Trigger OnRemoveConnection
             node.OnRemoveConnection(this);
             if (port != null) port.node.OnRemoveConnection(port);

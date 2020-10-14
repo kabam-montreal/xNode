@@ -170,15 +170,18 @@ namespace XNodeEditor {
                             } else {
                                 hoveredPort.VerifyConnections();
                                 autoConnectOutput = null;
-                                if (hoveredPort.IsConnected) {
+                                if (hoveredPort.IsConnected && graphEditor?.target != null) {
                                     XNode.Node node = hoveredPort.node;
-                                    XNode.NodePort output = hoveredPort.Connection;
-                                    int outputConnectionIndex = output.GetConnectionIndex(hoveredPort);
-                                    draggedOutputReroutes = output.GetReroutePoints(outputConnectionIndex);
-                                    hoveredPort.Disconnect(output);
-                                    draggedOutput = output;
-                                    draggedOutputTarget = hoveredPort;
-                                    if (NodeEditor.onUpdateNode != null) NodeEditor.onUpdateNode(node);
+                                    XNode.NodePort output = hoveredPort.GetConnections().FirstOrDefault(x => (graphEditor.target.nodes.Contains(x.node)));
+                                    if (output != null) {
+                                        int outputConnectionIndex = output.GetConnectionIndex(hoveredPort);
+                                        draggedOutputReroutes = output.GetReroutePoints(outputConnectionIndex);
+                                        hoveredPort.Disconnect(output);
+                                        draggedOutput = output;
+                                        draggedOutputTarget = hoveredPort;
+                                        if (NodeEditor.onUpdateNode != null) NodeEditor.onUpdateNode(node);
+                                    }
+
                                 }
                             }
                         } else if (IsHoveringNode && IsHoveringTitle(hoveredNode)) {
