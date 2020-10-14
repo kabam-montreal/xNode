@@ -20,10 +20,10 @@ namespace XNodeEditor {
 
         [System.Serializable]
         public class Settings : ISerializationCallbackReceiver {
-            [SerializeField] private Color32 _gridLineColor = new Color(0.45f, 0.45f, 0.45f);
+            [SerializeField] private Color32 _gridLineColor = new Color(.23f, .23f, .23f);
             public Color32 gridLineColor { get { return _gridLineColor; } set { _gridLineColor = value; _gridTexture = null; _crossTexture = null; } }
 
-            [SerializeField] private Color32 _gridBgColor = new Color(0.18f, 0.18f, 0.18f);
+            [SerializeField] private Color32 _gridBgColor = new Color(.19f, .19f, .19f);
             public Color32 gridBgColor { get { return _gridBgColor; } set { _gridBgColor = value; _gridTexture = null; } }
 
             [Obsolete("Use maxZoom instead")]
@@ -35,12 +35,15 @@ namespace XNodeEditor {
             public Color32 highlightColor = new Color32(255, 255, 255, 255);
             public bool gridSnap = true;
             public bool autoSave = true;
+            public bool openOnCreate = true;
             public bool dragToCreate = true;
             public bool zoomToMouse = true;
             public bool portTooltips = true;
             [SerializeField] private string typeColorsData = "";
             [NonSerialized] public Dictionary<string, Color> typeColors = new Dictionary<string, Color>();
             [FormerlySerializedAs("noodleType")] public NoodlePath noodlePath = NoodlePath.Curvy;
+            public float noodleThickness = 2f;
+
             public NoodleStroke noodleStroke = NoodleStroke.Full;
 
             private Texture2D _gridTexture;
@@ -100,7 +103,7 @@ namespace XNodeEditor {
         public static SettingsProvider CreateXNodeSettingsProvider() {
             SettingsProvider provider = new SettingsProvider("Preferences/Node Editor", SettingsScope.User) {
                 guiHandler = (searchContext) => { XNodeEditor.NodeEditorPreferences.PreferencesGUI(); },
-                keywords = new HashSet<string>(new [] { "xNode", "node", "editor", "graph", "connections", "noodles", "ports" })
+                    keywords = new HashSet<string>(new [] { "xNode", "node", "editor", "graph", "connections", "noodles", "ports" })
             };
             return provider;
         }
@@ -149,6 +152,7 @@ namespace XNodeEditor {
             //Label
             EditorGUILayout.LabelField("System", EditorStyles.boldLabel);
             settings.autoSave = EditorGUILayout.Toggle(new GUIContent("Autosave", "Disable for better editor performance"), settings.autoSave);
+            settings.openOnCreate = EditorGUILayout.Toggle(new GUIContent("Open Editor on Create", "Disable to prevent openening the editor when creating a new graph"), settings.openOnCreate);
             if (GUI.changed) SavePrefs(key, settings);
             EditorGUILayout.Space();
         }
@@ -158,6 +162,7 @@ namespace XNodeEditor {
             EditorGUILayout.LabelField("Node", EditorStyles.boldLabel);
             settings.highlightColor = EditorGUILayout.ColorField("Selection", settings.highlightColor);
             settings.noodlePath = (NoodlePath) EditorGUILayout.EnumPopup("Noodle path", (Enum) settings.noodlePath);
+            settings.noodleThickness = EditorGUILayout.FloatField(new GUIContent("Noodle thickness", "Noodle Thickness of the node connections"), settings.noodleThickness);
             settings.noodleStroke = (NoodleStroke) EditorGUILayout.EnumPopup("Noodle stroke", (Enum) settings.noodleStroke);
             settings.portTooltips = EditorGUILayout.Toggle("Port Tooltips", settings.portTooltips);
             settings.dragToCreate = EditorGUILayout.Toggle(new GUIContent("Drag to Create", "Drag a port connection anywhere on the grid to create and connect a node"), settings.dragToCreate);
