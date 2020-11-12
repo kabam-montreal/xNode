@@ -28,6 +28,31 @@ namespace XNodeEditor {
                 NodeEditorWindow.Open(serializedObject.targetObject as XNode.NodeGraph);
             }
 
+            if (GUILayout.Button("Duplicate graph", GUILayout.Height(40))) {
+                var graph = serializedObject.targetObject as XNode.NodeGraph;
+                try 
+                {
+                    AssetDatabase.StartAssetEditing();
+                    var graphCopy = graph.Copy();                
+
+                    var originalPath = AssetDatabase.GetAssetPath(graph);
+                    AssetDatabase.CreateAsset(graphCopy, originalPath.Replace(".asset", "(Clone).asset"));
+                    foreach(var node in graphCopy.nodes) {
+                        if (!graphCopy.IsRefNode(node)) {
+                            AssetDatabase.AddObjectToAsset(node, graphCopy);
+                        }
+                    }
+
+                    AssetDatabase.SaveAssets();
+                }
+                finally
+                {
+                    AssetDatabase.StopAssetEditing();
+                }
+            }
+
+            
+
             GUILayout.Space(EditorGUIUtility.singleLineHeight);
             GUILayout.Label("Raw data", "BoldLabel");
 

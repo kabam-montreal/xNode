@@ -197,21 +197,47 @@ namespace XNode {
         public virtual XNode.NodeGraph Copy() {
             // Instantiate a new nodegraph instance
             NodeGraph graph = Instantiate(this);
+
+            Dictionary<Node, Node> oldNodeToNewNode= new Dictionary<Node, Node>();
+            graph.nodePositions.Clear();
             // Instantiate all nodes inside the graph
             for (int i = 0; i < nodes.Count; i++) {
                 if (nodes[i] == null) continue;
-                Node.graphHotfix = graph;
-                Node node = Instantiate(nodes[i]) as Node;
-                node.graph = graph;
-                graph.nodes[i] = node;
+                if (!this.IsRefNode(nodes[i]))
+                {
+                    Node.graphHotfix = graph;
+                    Node node = Instantiate(nodes[i]) as Node;
+                    node.graph = graph;
+                    graph.nodes[i] = node;
+                    node.ClearConnections();
+
+                    oldNodeToNewNode.Add(nodes[i], node);
+
+                    graph.SetNodePosition(node, GetNodePosition(nodes[i]));
+                }
+                else
+                {
+                    oldNodeToNewNode.Add(nodes[i], nodes[i]);
+                    graph.SetNodePosition(nodes[i], GetNodePosition(nodes[i]));
+                }
             }
 
-            // Redirect all connections
-            for (int i = 0; i < graph.nodes.Count; i++) {
-                if (graph.nodes[i] == null) continue;
-                foreach (NodePort port in graph.nodes[i].Ports) {
-                    port.Redirect(nodes, graph.nodes);
-                }
+            for (int i = 0; i < nodes.Count; i++) {
+                if (nodes[i] == null || this.IsRefNode(nodes[i])) continue;
+                    // copy over all connections
+                    foreach (NodePort fromPort in nodes[i].Ports) {
+                        // get corresponding port in new graph
+                        var fromNodeInNewGraph = graph.nodes[i];
+                        var fromPortInNewNode = fromNodeInNewGraph.GetPort(fromPort.fieldName);
+                        
+                        var portConnections = fromPort.GetConnections();
+                        foreach(NodePort toPort in portConnections) {
+                            var toNodeInNewGraph = oldNodeToNewNode[toPort.node];
+                            var toPortInNewNode = toNodeInNewGraph.GetPort(toPort.fieldName);
+
+                            fromPortInNewNode.Connect(toPortInNewNode);
+                        }
+                    }
             }
 
             return graph;
