@@ -104,82 +104,9 @@ namespace XNode {
             if (Application.isPlaying) Destroy(node);
         }
 
-        /// <summary> Safely remove a node and all its connections to nodes in the current graph </summary>
-        /// <param name="node"> The node to remove </param>
-        public virtual void RemoveRefNode(Node node)
-        {
-            // Remove only the connections to nodes in the current graph
-            foreach (NodePort port in node.Ports)
-            {
-                // this is a list copy so ok to delete while iterating
-                var portConnections = port.GetConnections();
-                foreach (var connectedPort in portConnections)
-                {
-                    // Don't break ref node to ref node connections
-                    if (nodes.Contains(connectedPort.node) && !IsRefNode(connectedPort.node))
-                    {
-                        port.Disconnect(connectedPort);
-                    }
-                }
-            }
-
-            nodes.Remove(node);
-            nodePositions.RemoveAll(x => x.node == node);
-        }
-
         public bool IsRefNode(Node node)
         {
             return this != node.graph;
-        }
-
-        /// <summary> Purge all ref nodes who are not connected </summary>
-        public void PurgeOrphanRefNodes()
-        {
-            nodes.RemoveAll(x => x == null);
-            nodePositions.RemoveAll(x => x.node == null);
-            PurgeOrphanRefNodesInternal();
-        }
-
-        private void PurgeOrphanRefNodesInternal()
-        {
-            bool hasRemovedNode = false;
-            foreach (var node in nodes.ToList())
-            {
-                bool isRef = IsRefNode(node);
-                if (isRef)
-                {
-                    bool isConnected = false;
-                    foreach (XNode.NodePort inputPort in node.Inputs)
-                    {
-                        var connections = inputPort.GetConnections();
-                        foreach (var connection in connections)
-                        {
-                            if (connection.node != null && nodes.Contains(connection.node))
-                            {
-                                isConnected = true;
-                                break;
-                            }
-                        }
-
-                        if (isConnected)
-                        {
-                            break;
-                        }
-                    }
-
-                    if (!isConnected)
-                    {
-                        RemoveRefNode(node);
-                        hasRemovedNode = true;
-                    }
-                }
-            }
-
-            // Purging nodes might have created new orphans, rerun until no nodes are removed
-            if (hasRemovedNode)
-            {
-                PurgeOrphanRefNodes();
-            }
         }
 
         /// <summary> Remove all nodes and connections from the graph </summary>
@@ -195,52 +122,7 @@ namespace XNode {
 
         /// <summary> Create a new deep copy of this graph </summary>
         public virtual XNode.NodeGraph Copy() {
-            // Instantiate a new nodegraph instance
-            NodeGraph graph = Instantiate(this);
-
-            Dictionary<Node, Node> oldNodeToNewNode= new Dictionary<Node, Node>();
-            graph.nodePositions.Clear();
-            // Instantiate all nodes inside the graph
-            for (int i = 0; i < nodes.Count; i++) {
-                if (nodes[i] == null) continue;
-                if (!this.IsRefNode(nodes[i]))
-                {
-                    Node.graphHotfix = graph;
-                    Node node = Instantiate(nodes[i]) as Node;
-                    node.graph = graph;
-                    graph.nodes[i] = node;
-                    node.ClearConnections();
-
-                    oldNodeToNewNode.Add(nodes[i], node);
-
-                    graph.SetNodePosition(node, GetNodePosition(nodes[i]));
-                }
-                else
-                {
-                    oldNodeToNewNode.Add(nodes[i], nodes[i]);
-                    graph.SetNodePosition(nodes[i], GetNodePosition(nodes[i]));
-                }
-            }
-
-            for (int i = 0; i < nodes.Count; i++) {
-                if (nodes[i] == null || this.IsRefNode(nodes[i])) continue;
-                    // copy over all connections
-                    foreach (NodePort fromPort in nodes[i].Ports) {
-                        // get corresponding port in new graph
-                        var fromNodeInNewGraph = graph.nodes[i];
-                        var fromPortInNewNode = fromNodeInNewGraph.GetPort(fromPort.fieldName);
-                        
-                        var portConnections = fromPort.GetConnections();
-                        foreach(NodePort toPort in portConnections) {
-                            var toNodeInNewGraph = oldNodeToNewNode[toPort.node];
-                            var toPortInNewNode = toNodeInNewGraph.GetPort(toPort.fieldName);
-
-                            fromPortInNewNode.Connect(toPortInNewNode);
-                        }
-                    }
-            }
-
-            return graph;
+            return null;
         }
 
         protected virtual void OnDestroy() {
